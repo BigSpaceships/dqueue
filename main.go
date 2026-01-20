@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -21,8 +20,8 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-    panic("Error loading .env file")
-  }
+		panic("Error loading .env file")
+	}
 
 	csh := csh_auth.CSHAuth{}
 	csh.Init(
@@ -31,8 +30,8 @@ func main() {
 		os.Getenv("JWT_SECRET"),
 		os.Getenv("STATE"),
 		os.Getenv("HOST"),
-		os.Getenv("HOST") + "/auth/callback",
-		os.Getenv("HOST") + "/auth/login",
+		os.Getenv("HOST")+"/auth/callback",
+		os.Getenv("HOST")+"/auth/login",
 		[]string{"profile", "groups"},
 	)
 
@@ -41,11 +40,11 @@ func main() {
 		panic(err)
 	}
 
-	r.Use(static.Serve("/", fs))
-
 	r.GET("/auth/login", csh.AuthRequest)
 	r.GET("/auth/callback", csh.AuthCallback)
 	r.GET("/auth/logout", csh.AuthLogout)
+
+	r.Use(csh.AuthWrapper(static.Serve("/", fs)))
 
 	r.GET("/api/ping", csh.AuthWrapper(func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
