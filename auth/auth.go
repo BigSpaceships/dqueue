@@ -2,21 +2,36 @@ package auth
 
 import (
 	"context"
-	"io"
-	// "encoding/json"
+	"fmt"
+	"time"
+
 	"log"
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/oauth2"
 )
 
 type Config struct {
 	ClientId     string
 	ClientSecret string
+	JwtSecret    string
 	State        string
 	RedirectURI  string
-	Issuer			 string
+	Issuer       string
+}
+
+type AuthClaims struct {
+	Token    string   `json:"token"`
+	UserInfo UserInfo `"json:user_info"`
+	jwt.StandardClaims
+}
+
+type UserInfo struct {
+	Name     string `json:"name"`
+	Username string `json:"preferred_username"`
+	IsEboard bool
 }
 
 var oauthConfig oauth2.Config
@@ -24,7 +39,8 @@ var ctx = context.Background()
 var provider *oidc.Provider
 
 func (auth *Config) SetupAuth() {
-	provider, err := oidc.NewProvider(ctx, auth.Issuer)
+	var err error
+	provider, err = oidc.NewProvider(ctx, auth.Issuer)
 
 	if err != nil {
 		log.Fatal(err)
@@ -39,19 +55,19 @@ func (auth *Config) SetupAuth() {
 	}
 }
 
+func Status(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("Auth")
+
+	fmt.Printf("%s, %s\n", cookie, err)
+
+	fmt.Fprintf(w, "hii")
+}
+
 func (auth *Config) LoginRequest(w http.ResponseWriter, r *http.Request) {
-	// requestUri := fmt.Sprintf("https://sso.csh.rit.edu/auth/realms/csh/protocol/openid-connect/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=openid&state=%s", auth.ClientId, auth.RedirectURI, auth.State)
 	http.Redirect(w, r, oauthConfig.AuthCodeURL(auth.State), http.StatusFound)
 }
 
 func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
-	// session, err := r.Cookie("AuthSession")
-	//
-	// if err != nil {
-	// 	http.Error(w, "No auth session", http.StatusBadRequest)
-	// 	return
-	// }
-
 	state := r.URL.Query().Get("state")
 
 	if state != auth.State {
@@ -64,14 +80,38 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Printf("%s", oauthToken)
-	
-	req, err := http.NewRequest("GET", auth.Issuer+"/protocol/openid-connect/userinfo", nil)
-	oauthToken.SetAuthHeader(req)
 
-	res, err := http.DefaultClient.Do(req)
-	jsonRaw, err := io.ReadAll(res.Body)
+	oidcUserInfo, err := provider.UserInfo(ctx, oauth2.StaticTokenSource(oauthToken))
 
-	log.Printf("%s", &jsonRaw)
-	
+	userInfo := &UserInfo{}
+	oidcUserInfo.Claims(userInfo)
+
+	expireToken := time.Now().Add(time.Hour * 1).Unix()
+	expireCookie := 3600
+	claims := AuthClaims{
+		oauthToken.AccessToken,
+		*userInfo,
+		jwt.StandardClaims{
+			ExpiresAt: expireToken,
+			Issuer:    auth.Issuer,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString([]byte(auth.JwtSecret))
+
+	cookie := &http.Cookie{
+		Name: "Auth",
+		Value: signedToken,
+		MaxAge: expireCookie,
+		Path: "/",
+	}
+
+	http.SetCookie(w, cookie)
+
+	w.WriteHeader(http.StatusOK)
+
+	// json_data, err := json.MarshalIndent(jsonRaw, "", "    ")
+
+	// log.Println(string(jsonRaw))
 }

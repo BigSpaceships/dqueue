@@ -50,6 +50,8 @@ func main() {
 	http.HandleFunc("/auth/login", myAuth.LoginRequest)
 	http.HandleFunc("/auth/callback", myAuth.LoginCallback)
 
+	http.HandleFunc("/test", auth.Status)
+
 	http.Handle("/", fs)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
