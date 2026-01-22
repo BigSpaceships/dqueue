@@ -134,5 +134,6 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, cookie)
 
-	w.WriteHeader(http.StatusOK)
+	// TODO: enable this to redirect to whatever route they tried to access
+	http.Redirect(w, r, "/", http.StatusFound)
 }

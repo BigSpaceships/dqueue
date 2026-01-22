@@ -1,7 +1,7 @@
 package main
 
 import (
-	"embed"
+	// "embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,13 +9,12 @@ import (
 
 	"github.com/bigspaceships/circlejerk/auth"
 
-	// "github.com/gin-contrib/static"
-	// "github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-//go:embed static
-var server embed.FS
+// TODO: figure this bit out
+//ree go:embed static
+// var server embed.FS
 
 func ping(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", r.Context().Value("UserClaims"))
