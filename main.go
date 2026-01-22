@@ -28,7 +28,7 @@ func main() {
 		panic("Error loading .env file")
 	}
 
-	myAuth := auth.Config{
+	cshAuth := auth.Config{
 		ClientId: os.Getenv("OIDC_CLIENT_ID"),
 		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
 		State: os.Getenv("STATE"),
@@ -37,16 +37,20 @@ func main() {
 		Issuer: os.Getenv("ISSUER"),
 	}
 
-	myAuth.SetupAuth()
+	cshAuth.SetupAuth()
 
 	fs := http.FileServer(http.Dir("./static"))
 
-	http.HandleFunc("/auth/login", myAuth.LoginRequest)
-	http.HandleFunc("/auth/callback", myAuth.LoginCallback)
+	http.HandleFunc("/auth/login", cshAuth.LoginRequest)
+	http.HandleFunc("/auth/callback", cshAuth.LoginCallback)
 
-	http.Handle("/api/ping", myAuth.Handler(http.HandlerFunc(ping)))
+	apiMux := http.NewServeMux()
 
-	http.Handle("/", myAuth.Handler(fs))
+	apiMux.HandleFunc("/ping", ping)
+
+	http.Handle("/api/", http.StripPrefix("/api", cshAuth.Handler(apiMux)))
+
+	http.Handle("/", cshAuth.Handler(fs))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
