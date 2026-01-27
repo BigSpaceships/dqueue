@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	"log"
@@ -30,9 +31,10 @@ type AuthClaims struct {
 }
 
 type UserInfo struct {
-	Name     string `json:"name"`
-	Username string `json:"preferred_username"`
-	IsEboard bool   `json:"is_eboard"`
+	Name     string   `json:"name"`
+	Username string   `json:"preferred_username"`
+	IsEboard bool     `json:"is_eboard"`
+	Groups   []string `json:"groups"`
 }
 
 var oauthConfig oauth2.Config
@@ -114,6 +116,9 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	userInfo := &UserInfo{}
 	oidcUserInfo.Claims(userInfo)
+
+	userInfo.IsEboard = slices.Contains(userInfo.Groups, "eboard")
+	log.Printf("%s\n", userInfo)
 
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
 	expireCookie := 3600
