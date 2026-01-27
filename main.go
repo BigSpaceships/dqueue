@@ -60,8 +60,8 @@ func main() {
 	apiMux.HandleFunc("GET /ping", ping)
 	apiMux.HandleFunc("POST /point", queue.NewPoint)
 	apiMux.HandleFunc("POST /clarifier", queue.NewClarifier)
-	apiMux.HandleFunc("DELETE /point", queue.NewPoint)
-	apiMux.HandleFunc("DELETE /clarifier", queue.NewClarifier)
+	apiMux.HandleFunc("DELETE /point/{id}", queue.DeletePoint)
+	apiMux.HandleFunc("DELETE /clarifier/{id}", queue.DeleteClarifier)
 	apiMux.HandleFunc("GET /queue", queue.GetQueue)
 	apiMux.HandleFunc("/join_ws", ws_server.WebsocketConnect)
 

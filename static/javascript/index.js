@@ -15,9 +15,15 @@ async function getQueue() {
 }
 
 function enterQueue(type) {
-  fetch(window.location.origin + "/api/" + type, {
+  fetch(`${window.location.origin}/api/${type}`, {
     method: "POST",
   })
+}
+
+function leaveQueue(type, id) {
+  fetch(`${window.location.origin}/api/${type}/${id}`, {
+    method: "DELETE",
+  });
 }
 
 function joinWebsocket() {
@@ -68,13 +74,16 @@ function updateUserInfo(userInfo) {
 
 function getListNodeForQueueEntry(queueEntry) {
   const type = queueEntry["type"];
-  const name = ` ${queueEntry["name"]} (${queueEntry["username"]})`
+  const name = `${queueEntry["name"]} (${queueEntry["username"]})`
+  const id = queueEntry["id"];
 
   const listElement = document.createElement("li");
-  listElement.classList.add("list-group-item");
+  listElement.classList.add("list-group-item", "d-flex", "flex-row");
+
+  listElement.dataset.id = id;
 
   const badgeElement = document.createElement("span");
-  badgeElement.classList.add("badge")
+  badgeElement.classList.add("badge", "align-self-center", "mr-1")
 
   if (type == "point") {
     badgeElement.classList.add("badge-info");
@@ -84,15 +93,22 @@ function getListNodeForQueueEntry(queueEntry) {
     badgeElement.appendChild(document.createTextNode("Clarifier"));
   }
 
+  const completeLink = document.createElement("a");
+  completeLink.href = "#";
+  completeLink.classList.add("ml-auto");
+  completeLink.onclick = () => { leaveQueue(type, id); return false; };
+  completeLink.innerHTML = '<i class="fa-solid fa-check text-success"></i>'
+
   listElement.appendChild(badgeElement);
   listElement.appendChild(document.createTextNode(name));
+  listElement.appendChild(completeLink)
   return listElement;
 }
 
 function addEntryToQueue(type, queueEntry) {
   const listElement = document.querySelector("ul.list-group");
 
-  if (type == "clarifier") {  
+  if (type == "clarifier") {
     const divider = document.querySelector("div.clarifier-spacer");
     listElement.insertBefore(getListNodeForQueueEntry(queueEntry), divider);
   } else if (type == "point") {

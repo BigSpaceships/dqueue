@@ -3,6 +3,8 @@ package queue
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
+	"strconv"
 
 	"github.com/bigspaceships/circlejerk/auth"
 	dq_websocket "github.com/bigspaceships/circlejerk/websocket"
@@ -12,6 +14,7 @@ type QueueEntry struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
 	Type     string `json:"type"`
+	Id       int    `json:"id"`
 }
 
 type QueueRequestData struct {
@@ -19,16 +22,72 @@ type QueueRequestData struct {
 }
 
 type Queue struct {
-	NewPoints  []QueueEntry `json:"points"`
+	Points     []QueueEntry `json:"points"`
 	Clarifiers []QueueEntry `json:"clarifiers"`
 	wsServer   *dq_websocket.WsServer
+	pointCount int
 }
 
 func SetupQueue(wsServer *dq_websocket.WsServer) *Queue {
 	return &Queue{
-		NewPoints:  make([]QueueEntry, 0),
+		Points:     make([]QueueEntry, 0),
 		Clarifiers: make([]QueueEntry, 0),
 		wsServer:   wsServer,
+		pointCount: 0,
+	}
+}
+
+func (queue *Queue) DeletePoint(w http.ResponseWriter, r *http.Request) {
+	userInfo := auth.GetUserClaims(r)
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+
+	if err != nil {
+		http.Error(w, "error parsing id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	pointIndex := slices.IndexFunc(queue.Points, func(entry QueueEntry) bool {
+		return entry.Id == id
+	})
+
+	point := queue.Points[pointIndex]
+
+	if !(userInfo.IsEboard || point.Username == userInfo.Username) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	queue.Points = slices.Concat(queue.Points[:pointIndex], queue.Points[(pointIndex+1):])
+	if queue.Points == nil {
+		queue.Points = make([]QueueEntry, 0)
+	}
+}
+
+func (queue *Queue) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
+	userInfo := auth.GetUserClaims(r)
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+
+	if err != nil {
+		http.Error(w, "error parsing id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	pointIndex := slices.IndexFunc(queue.Clarifiers, func(entry QueueEntry) bool {
+		return entry.Id == id
+	})
+
+	point := queue.Clarifiers[pointIndex]
+
+	if !(userInfo.IsEboard || point.Username == userInfo.Username) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	queue.Clarifiers = slices.Concat(queue.Clarifiers[:pointIndex], queue.Clarifiers[(pointIndex+1):])
+	if queue.Clarifiers == nil {
+		queue.Clarifiers = make([]QueueEntry, 0)
 	}
 }
 
@@ -51,10 +110,13 @@ func (queue *Queue) NewClarifier(w http.ResponseWriter, r *http.Request) {
 	requestData := QueueRequestData{}
 	json.NewDecoder(r.Body).Decode(&requestData)
 
+	queue.pointCount++
+
 	newEntry := QueueEntry{
 		Name:     userInfo.Name,
 		Username: userInfo.Username,
 		Type:     "clarifier",
+		Id:       queue.pointCount,
 	}
 
 	queue.Clarifiers = append(queue.Clarifiers, newEntry)
@@ -76,13 +138,16 @@ func (queue *Queue) NewPoint(w http.ResponseWriter, r *http.Request) {
 	requestData := QueueRequestData{}
 	json.NewDecoder(r.Body).Decode(&requestData)
 
+	queue.pointCount++
+
 	newEntry := QueueEntry{
 		Name:     userInfo.Name,
 		Username: userInfo.Username,
 		Type:     "point",
+		Id:       queue.pointCount,
 	}
 
-	queue.NewPoints = append(queue.NewPoints, newEntry)
+	queue.Points = append(queue.Points, newEntry)
 
 	w.WriteHeader(http.StatusOK)
 
