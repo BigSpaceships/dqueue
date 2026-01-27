@@ -24,7 +24,7 @@ function enterQueue(type) {
 }
 
 function joinWebsocket() {
-  const isSecure = window.location.isSecure;
+  const isSecure = window.location.protocol == "https";
   const protocol = isSecure ? "wss" : "ws";
   const socket = new WebSocket(`${protocol}://${window.location.host}/api/join_ws`);
 
