@@ -93,7 +93,7 @@ async function getUserInfo() {
 
   const jwt = parseJwt(cookie.value)
 
-  if (Date.now() / 1000> jwt.exp) {
+  if (Date.now() / 1000 > jwt.exp) {
     throw new Error("Not authed");
   }
 
@@ -159,6 +159,9 @@ function addEntryToQueue(type, queueEntry) {
   } else {
     console.error("unknown type: " + type);
   }
+
+  const emptyQueueMsg = document.querySelector("p#empty-queue")
+  emptyQueueMsg.setAttribute("hidden", true)
 }
 
 function removeEntryFromQueue(id, dismisser) {
@@ -168,6 +171,10 @@ function removeEntryFromQueue(id, dismisser) {
   })
 
   console.log(`${dismisser} dismissed point ${id}`);
+  if (listElement.children.length == 1) {
+    const emptyQueueMsg = document.querySelector("p#empty-queue")
+    emptyQueueMsg.removeAttribute("hidden")
+  }
 }
 
 function setTopic(topic) {
