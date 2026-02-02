@@ -171,6 +171,9 @@ function removeEntryFromQueue(id, dismisser) {
   })
 
   console.log(`${dismisser} dismissed point ${id}`);
+
+  $('.toast').toast('show')
+
   if (listElement.children.length == 1) {
     const emptyQueueMsg = document.querySelector("p#empty-queue")
     emptyQueueMsg.removeAttribute("hidden")
@@ -210,6 +213,10 @@ async function main() {
   }
 
   joinWebsocket();
+
+  $('.toast').toast({
+    autohide: false
+  })
 
   await rebuildQueue();
 }
