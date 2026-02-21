@@ -83,7 +83,8 @@ func Handler(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("Auth")
 
 		if err != nil || cookie.Value == "" {
-			log.Println("cookie not found")
+			// log.Println("cookie not found")
+			w.WriteHeader(http.StatusForbidden)
 			http.Redirect(w, r, "auth", http.StatusFound)
 			return
 		}

@@ -10,3 +10,7 @@ services:
         - action: sync+restart
           path: ./static
           target: /opt/dqueue/static
+        - action: rebuild
+          path: ./**.go
+          ignore: 
+            - "./static"

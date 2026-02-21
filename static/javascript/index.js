@@ -1,6 +1,18 @@
+async function fetchAPI(input, init) {
+  const response = await fetch(input, init);
+
+  if (response.status == 403) {
+    console.error("Not logged in");
+    window.location.assign("/auth");
+    return;
+  }
+
+  return response;
+}
+
 async function getQueue() {
   try {
-    const response = await fetch(window.location.origin + "/api/queue")
+    const response = await fetchAPI(window.location.origin + "/api/queue")
 
     if (!response.ok) {
       throw new Error(response.status);
@@ -15,19 +27,19 @@ async function getQueue() {
 }
 
 function enterQueue(type) {
-  fetch(`${window.location.origin}/api/${type}`, {
+  fetchAPI(`${window.location.origin}/api/${type}`, {
     method: "POST",
   })
 }
 
 function leaveQueue(type, id) {
-  fetch(`${window.location.origin}/api/${type}/${id}`, {
+  fetchAPI(`${window.location.origin}/api/${type}/${id}`, {
     method: "DELETE",
   });
 }
 
 function changeTopic(event) {
-  fetch(`${window.location.origin}/api/change-topic`, {
+  fetchAPI(`${window.location.origin}/api/change-topic`, {
     method: "POST",
     body: JSON.stringify({
       "new-topic": event.target.value
@@ -172,7 +184,7 @@ function removeEntryFromQueue(id, dismisser) {
 
   console.log(`${dismisser} dismissed point ${id}`);
 
-  if (listElement.children.length == 1) {
+  if (listElement.children.length == 2) {
     const emptyQueueMsg = document.querySelector("p#empty-queue")
     emptyQueueMsg.removeAttribute("hidden")
   }
@@ -187,7 +199,10 @@ async function rebuildQueue() {
   let queue = await getQueue();
 
   const listElement = document.querySelector("#list-parent");
-  Array.from(listElement.children).filter((el) => !el.classList.contains("clarifier-spacer") && !el.id == "empty-queue").forEach((el) => {
+
+  Array.from(listElement.children).filter((el) => { 
+    return !el.classList.contains("clarifier-spacer") && el.id != "empty-queue" 
+  }).forEach((el) => {
     el.remove();
   })
 
@@ -203,9 +218,7 @@ async function rebuildQueue() {
 }
 
 async function main() {
-  console.log("hi")
   try {
-    console.log("hi2")
     userInfo = await getUserInfo();
     console.log(userInfo)
     updateUserInfo(userInfo);
