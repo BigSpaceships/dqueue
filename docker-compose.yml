@@ -1,0 +1,12 @@
+services:
+  dairyqueen:
+    build: .
+    container_name: dqueue
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file: ".env"
+    develop:
+      watch: 
+        - action: sync+restart
+          path: ./static
+          target: /opt/dqueue/static
