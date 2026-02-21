@@ -119,7 +119,7 @@ function getListNodeForQueueEntry(queueEntry) {
   const id = queueEntry["id"];
 
   const listElement = document.createElement("div");
-  listElement.classList.add("d-flex", "flex-row", "px-4", "py-3", "border-bottom");
+  listElement.classList.add("d-flex", "flex-row", "px-4", "py-2", "border-bottom", "align-items-center");
 
   listElement.dataset.id = id;
 
@@ -142,7 +142,7 @@ function getListNodeForQueueEntry(queueEntry) {
     completeLink.href = "#";
     completeLink.classList.add("ms-auto");
     completeLink.onclick = () => { leaveQueue(type, id); return false; };
-    completeLink.innerHTML = '<i class="fa-solid fa-check text-success"></i>'
+    completeLink.innerHTML = '<i class="bi bi-check-lg text-success fs-4"></i>'
     listElement.appendChild(completeLink)
   }
   return listElement;
