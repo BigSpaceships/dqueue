@@ -118,19 +118,19 @@ function getListNodeForQueueEntry(queueEntry) {
   const name = `${queueEntry["name"]} (${queueEntry["username"]})`
   const id = queueEntry["id"];
 
-  const listElement = document.createElement("li");
-  listElement.classList.add("list-group-item", "d-flex", "flex-row");
+  const listElement = document.createElement("div");
+  listElement.classList.add("d-flex", "flex-row", "px-4", "py-3", "border-bottom");
 
   listElement.dataset.id = id;
 
   const badgeElement = document.createElement("span");
-  badgeElement.classList.add("badge", "align-self-center", "mr-1")
+  badgeElement.classList.add("badge", "align-self-center", "me-2")
 
   if (type == "point") {
-    badgeElement.classList.add("badge-info");
+    badgeElement.classList.add("text-bg-info");
     badgeElement.appendChild(document.createTextNode("Point"));
   } else if (type == "clarifier") {
-    badgeElement.classList.add("badge-success");
+    badgeElement.classList.add("text-bg-success");
     badgeElement.appendChild(document.createTextNode("Clarifier"));
   }
 
@@ -140,7 +140,7 @@ function getListNodeForQueueEntry(queueEntry) {
   if (queueEntry["username"] == window.userInfo.preferred_username || window.userInfo.is_eboard) {
     const completeLink = document.createElement("a");
     completeLink.href = "#";
-    completeLink.classList.add("ml-auto");
+    completeLink.classList.add("ms-auto");
     completeLink.onclick = () => { leaveQueue(type, id); return false; };
     completeLink.innerHTML = '<i class="fa-solid fa-check text-success"></i>'
     listElement.appendChild(completeLink)
@@ -149,7 +149,7 @@ function getListNodeForQueueEntry(queueEntry) {
 }
 
 function addEntryToQueue(type, queueEntry) {
-  const listElement = document.querySelector("ul.list-group");
+  const listElement = document.querySelector("#list-parent");
 
   if (type == "clarifier") {
     const divider = document.querySelector("div.clarifier-spacer");
@@ -165,14 +165,12 @@ function addEntryToQueue(type, queueEntry) {
 }
 
 function removeEntryFromQueue(id, dismisser) {
-  const listElement = document.querySelector("ul.list-group");
+  const listElement = document.querySelector("#list-parent");
   Array.from(listElement.children).filter((el) => el.dataset.id == id).forEach((el) => {
     el.remove();
   })
 
   console.log(`${dismisser} dismissed point ${id}`);
-
-  $('.toast').toast('show')
 
   if (listElement.children.length == 1) {
     const emptyQueueMsg = document.querySelector("p#empty-queue")
@@ -188,8 +186,8 @@ function setTopic(topic) {
 async function rebuildQueue() {
   let queue = await getQueue();
 
-  const listElement = document.querySelector("ul.list-group");
-  Array.from(listElement.children).filter((el) => !el.classList.contains("clarifier-spacer")).forEach((el) => {
+  const listElement = document.querySelector("#list-parent");
+  Array.from(listElement.children).filter((el) => !el.classList.contains("clarifier-spacer") && !el.id == "empty-queue").forEach((el) => {
     el.remove();
   })
 
@@ -205,18 +203,16 @@ async function rebuildQueue() {
 }
 
 async function main() {
+  console.log("hi")
   try {
+    console.log("hi2")
     userInfo = await getUserInfo();
+    console.log(userInfo)
     updateUserInfo(userInfo);
-  } catch {
-    window.location.replace(window.location.origin + "/auth")
+  } catch (e) {
   }
 
   joinWebsocket();
-
-  $('.toast').toast({
-    autohide: false
-  })
 
   await rebuildQueue();
 }
