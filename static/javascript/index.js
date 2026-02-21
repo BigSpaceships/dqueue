@@ -10,9 +10,9 @@ async function fetchAPI(input, init) {
   return response;
 }
 
-async function getQueue() {
+async function getDiscussion() {
   try {
-    const response = await fetchAPI(window.location.origin + "/api/queue")
+    const response = await fetchAPI(window.location.origin + "/api/discussion")
 
     if (!response.ok) {
       throw new Error(response.status);
@@ -27,19 +27,19 @@ async function getQueue() {
 }
 
 function enterQueue(type) {
-  fetchAPI(`${window.location.origin}/api/${type}`, {
+  fetchAPI(`${window.location.origin}/api/${window.queue_id}/${type}`, {
     method: "POST",
   })
 }
 
 function leaveQueue(type, id) {
-  fetchAPI(`${window.location.origin}/api/${type}/${id}`, {
+  fetchAPI(`${window.location.origin}/api/${window.queue_id}/${type}/${id}`, {
     method: "DELETE",
   });
 }
 
 function changeTopic(event) {
-  fetchAPI(`${window.location.origin}/api/change-topic`, {
+  fetchAPI(`${window.location.origin}/api/change-topic/${window.queue_id}`, {
     method: "POST",
     body: JSON.stringify({
       "new-topic": event.target.value
@@ -196,7 +196,9 @@ function setTopic(topic) {
 }
 
 async function rebuildQueue() {
-  let queue = await getQueue();
+  let discussion = await getDiscussion();
+  let queue = discussion.queue;
+  window.queue_id = queue.id;
 
   const listElement = document.querySelector("#list-parent");
 

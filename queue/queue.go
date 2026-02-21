@@ -2,6 +2,8 @@ package queue
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -22,24 +24,45 @@ type QueueRequestData struct {
 }
 
 type Queue struct {
+	Id         int          `json:"id"`
 	Points     []QueueEntry `json:"points"`
 	Clarifiers []QueueEntry `json:"clarifiers"`
+	Children   []Queue      `json:"children"`
 	Topic      string       `json:"topic"`
-	wsServer   *dq_websocket.WsServer
 	pointCount int
 }
 
-func SetupQueue(wsServer *dq_websocket.WsServer) *Queue {
-	return &Queue{
-		Points:     make([]QueueEntry, 0),
-		Clarifiers: make([]QueueEntry, 0),
-		Topic:      "Big long discussion",
-		wsServer:   wsServer,
-		pointCount: 0,
-	}
+type Discussion struct {
+	Queue      Queue `json:"queue"`
+	queueMap   map[int]*Queue
+	wsServer   *dq_websocket.WsServer
+	queueCount int
 }
 
-func (queue *Queue) DeletePoint(w http.ResponseWriter, r *http.Request) {
+func SetupDiscussion(wsServer *dq_websocket.WsServer) *Discussion {
+	discussion := Discussion{
+		wsServer:   wsServer,
+		queueCount: 0,
+		queueMap:   make(map[int]*Queue),
+	}
+
+	baseQueue := Queue{
+		Id:         discussion.queueCount,
+		Points:     make([]QueueEntry, 0),
+		Clarifiers: make([]QueueEntry, 0),
+		Children:   make([]Queue, 0),
+		Topic:      "Big long discussion",
+		pointCount: 0,
+	}
+
+	discussion.queueCount++
+	discussion.Queue = baseQueue
+	discussion.queueMap[baseQueue.Id] = &baseQueue
+
+	return &discussion
+}
+
+func (discussion *Discussion) DeletePoint(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
 
 	id, err := strconv.Atoi(r.PathValue("id"))
@@ -47,6 +70,19 @@ func (queue *Queue) DeletePoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "error parsing id to int"+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	queue_id, err := strconv.Atoi(r.PathValue("queue"))
+
+	if err != nil {
+		http.Error(w, "error parsing queue_id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue, ok := discussion.queueMap[queue_id]
+
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queue_id), http.StatusBadRequest)
 	}
 
 	pointIndex := slices.IndexFunc(queue.Points, func(entry QueueEntry) bool {
@@ -65,7 +101,7 @@ func (queue *Queue) DeletePoint(w http.ResponseWriter, r *http.Request) {
 		queue.Points = make([]QueueEntry, 0)
 	}
 
-	queue.wsServer.SendWSMessage(struct {
+	discussion.wsServer.SendWSMessage(struct {
 		Type      string `json:"type"`
 		Id        int    `json:"id"`
 		Dismisser string `json:"dismisser"`
@@ -76,7 +112,7 @@ func (queue *Queue) DeletePoint(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (queue *Queue) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
+func (discussion *Discussion) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
 
 	id, err := strconv.Atoi(r.PathValue("id"))
@@ -84,6 +120,19 @@ func (queue *Queue) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "error parsing id to int"+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	queue_id, err := strconv.Atoi(r.PathValue("queue"))
+
+	if err != nil {
+		http.Error(w, "error parsing queue_id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue, ok := discussion.queueMap[queue_id]
+
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queue_id), http.StatusBadRequest)
 	}
 
 	pointIndex := slices.IndexFunc(queue.Clarifiers, func(entry QueueEntry) bool {
@@ -102,7 +151,7 @@ func (queue *Queue) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
 		queue.Clarifiers = make([]QueueEntry, 0)
 	}
 
-	queue.wsServer.SendWSMessage(struct {
+	discussion.wsServer.SendWSMessage(struct {
 		Type      string `json:"type"`
 		Id        int    `json:"id"`
 		Dismisser string `json:"dismisser"`
@@ -113,8 +162,27 @@ func (queue *Queue) DeleteClarifier(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (queue *Queue) NewClarifier(w http.ResponseWriter, r *http.Request) {
+func (discussion *Discussion) NewClarifier(w http.ResponseWriter, r *http.Request) {
+	log.Println("hi")
 	userInfo := auth.GetUserClaims(r)
+	log.Println("hi")
+
+	queue_id, err := strconv.Atoi(r.PathValue("queue"))
+
+	log.Println("hi")
+	if err != nil {
+		http.Error(w, "error parsing queue_id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("%d\n", queue_id)
+
+	queue, ok := discussion.queueMap[queue_id]
+
+	log.Println("hi")
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queue_id), http.StatusBadRequest)
+	}
 
 	requestData := QueueRequestData{}
 	json.NewDecoder(r.Body).Decode(&requestData)
@@ -132,7 +200,7 @@ func (queue *Queue) NewClarifier(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	queue.wsServer.SendWSMessage(struct {
+	discussion.wsServer.SendWSMessage(struct {
 		Type string     `json:"type"`
 		Data QueueEntry `json:"data"`
 	}{
@@ -141,8 +209,21 @@ func (queue *Queue) NewClarifier(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (queue *Queue) NewPoint(w http.ResponseWriter, r *http.Request) {
+func (discussion *Discussion) NewPoint(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
+
+	queue_id, err := strconv.Atoi(r.PathValue("queue"))
+
+	if err != nil {
+		http.Error(w, "error parsing queue_id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue, ok := discussion.queueMap[queue_id]
+
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queue_id), http.StatusBadRequest)
+	}
 
 	requestData := QueueRequestData{}
 	json.NewDecoder(r.Body).Decode(&requestData)
@@ -160,7 +241,7 @@ func (queue *Queue) NewPoint(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	queue.wsServer.SendWSMessage(struct {
+	discussion.wsServer.SendWSMessage(struct {
 		Type string     `json:"type"`
 		Data QueueEntry `json:"data"`
 	}{
@@ -169,7 +250,7 @@ func (queue *Queue) NewPoint(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (queue *Queue) ChangeTopic(w http.ResponseWriter, r *http.Request) {
+func (discussion *Discussion) ChangeTopic(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
 
 	if !userInfo.IsEboard {
@@ -177,11 +258,24 @@ func (queue *Queue) ChangeTopic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	queue_id, err := strconv.Atoi(r.PathValue("queue"))
+
+	if err != nil {
+		http.Error(w, "error parsing queue_id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue, ok := discussion.queueMap[queue_id]
+
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queue_id), http.StatusBadRequest)
+	}
+
 	requestData := struct {
 		NewTopic string `json:"new-topic"`
 	}{}
 
-	err := json.NewDecoder(r.Body).Decode(&requestData)
+	err = json.NewDecoder(r.Body).Decode(&requestData)
 
 	if err != nil {
 		http.Error(w, "Error decoding body:"+err.Error(), http.StatusBadRequest)
@@ -190,7 +284,7 @@ func (queue *Queue) ChangeTopic(w http.ResponseWriter, r *http.Request) {
 
 	queue.Topic = requestData.NewTopic
 
-	queue.wsServer.SendWSMessage(struct {
+	discussion.wsServer.SendWSMessage(struct {
 		Type  string `json:"type"`
 		Topic string `json:"topic"`
 	}{
@@ -201,7 +295,26 @@ func (queue *Queue) ChangeTopic(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (queue *Queue) GetQueue(w http.ResponseWriter, r *http.Request) {
+func (discussion *Discussion) GetDiscussion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(discussion)
+}
+
+func (discussion *Discussion) GetQueue(w http.ResponseWriter, r *http.Request) {
+	queue_id, err := strconv.Atoi(r.PathValue("queue"))
+
+	if err != nil {
+		http.Error(w, "error parsing queue_id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue, ok := discussion.queueMap[queue_id]
+
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queue_id), http.StatusBadRequest)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(queue)

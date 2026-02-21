@@ -60,7 +60,7 @@ func main() {
 	}
 
 	ws_server := dq_websocket.CreateWSServer()
-	queue := queue.SetupQueue(ws_server)
+	discussion := queue.SetupDiscussion(ws_server)
 
 	fs := http.FileServer(http.Dir("./static"))
 
@@ -72,13 +72,13 @@ func main() {
 
 	apiMux := http.NewServeMux()
 
-	apiMux.HandleFunc("GET /ping", ping)
-	apiMux.HandleFunc("POST /point", queue.NewPoint)
-	apiMux.HandleFunc("POST /clarifier", queue.NewClarifier)
-	apiMux.HandleFunc("DELETE /point/{id}", queue.DeletePoint)
-	apiMux.HandleFunc("DELETE /clarifier/{id}", queue.DeleteClarifier)
-	apiMux.HandleFunc("POST /change-topic", queue.ChangeTopic)
-	apiMux.HandleFunc("GET /queue", queue.GetQueue)
+	apiMux.HandleFunc("POST /{queue}/point", discussion.NewPoint)
+	apiMux.HandleFunc("POST /{queue}/clarifier", discussion.NewClarifier)
+	apiMux.HandleFunc("DELETE /{queue}/point/{id}", discussion.DeletePoint)
+	apiMux.HandleFunc("DELETE /{queue}/clarifier/{id}", discussion.DeleteClarifier)
+	apiMux.HandleFunc("POST /{queue}/change-topic", discussion.ChangeTopic)
+	apiMux.HandleFunc("GET /{queue}/queue", discussion.GetQueue)
+	apiMux.HandleFunc("GET /discussion", discussion.GetDiscussion)
 	apiMux.HandleFunc("/join_ws", ws_server.WebsocketConnect)
 
 	http.Handle("/api/", http.StripPrefix("/api", auth.Handler(apiMux)))
