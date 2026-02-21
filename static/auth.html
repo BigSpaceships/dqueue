@@ -28,18 +28,24 @@
         transform: rotate(360deg);
       }
     }
+
+    @media (min-width:992px) {
+      .navbar, .navbar-brand {
+        font-size: 1rem!important;
+      }
+    }
   </style>
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-      <a class="navbar-brand" href="/">Dairy Queen 🍦</a>
+  <nav class="navbar navbar-expand-lg bg-primary fs-4 py-4 py-lg-2 px-3">
+    <div class="container-lg">
+      <a class="navbar-brand fs-4" href="/">Dairy Queen 🍦</a>
     </div>
   </nav>
 
   <div class="container main p-5 row mx-auto">
-    <div class="col-sm-6">
+    <div class="col-12 col-lg-6 mb-5">
       <div class="card">
         <div class="card-header text-center pt-4">
           <a class="text-decoration-none text-primary" href="auth/login-csh">
@@ -55,7 +61,7 @@
         </div>
       </div>
     </div>
-    <div class="col-sm-6">
+    <div class="col-12 col-lg-6">
       <div class="card">
         <div class="card-header text-center pt-4">
           <a class="text-decoration-none text-primary" href="auth/login-google">
