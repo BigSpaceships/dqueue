@@ -30,8 +30,10 @@
     }
 
     @media (min-width:992px) {
-      .navbar, .navbar-brand {
-        font-size: 1rem!important;
+
+      .navbar,
+      .navbar-brand {
+        font-size: 1rem !important;
       }
     }
   </style>
@@ -39,7 +41,9 @@
 
 <body>
   <nav class="navbar navbar-expand-lg bg-primary fs-4 py-4 py-lg-2 px-3">
-    <div class="container-lg">
+    <div class="container-lg justify-content-start">
+      <img class="object-fit-contain ms-2 me-2" height="32"
+        src="https://assets.csh.rit.edu/pubsite/csh_logo_square.svg">
       <a class="navbar-brand fs-4" href="/">Dairy Queen 🍦</a>
     </div>
   </nav>
@@ -48,7 +52,7 @@
     <div class="col-12 col-lg-6 mb-5">
       <div class="card">
         <div class="card-header text-center pt-4">
-          <a class="text-decoration-none text-primary" href="auth/login-csh">
+          <a class="text-decoration-none text-secondary" href="auth/login-csh">
             <h2>
               CSH
             </h2>
@@ -64,7 +68,7 @@
     <div class="col-12 col-lg-6">
       <div class="card">
         <div class="card-header text-center pt-4">
-          <a class="text-decoration-none text-primary" href="auth/login-google">
+          <a class="text-decoration-none text-secondary" href="auth/login-google">
             <h2>
               Google
             </h2>
