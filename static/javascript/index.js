@@ -131,7 +131,7 @@ function getListNodeForQueueEntry(queueEntry) {
   const id = queueEntry["id"];
 
   const listElement = document.createElement("div");
-  listElement.classList.add("d-flex", "flex-row", "px-4", "py-2", "border-bottom", "align-items-center");
+  listElement.classList.add("d-flex", "flex-row", "px-4", "py-3", "py-lg-2", "border-bottom", "align-items-center");
 
   listElement.dataset.id = id;
 
