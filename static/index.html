@@ -45,13 +45,19 @@
     <div class="container">
       <a class="navbar-brand" href="/">Dairy Queen 🍦</a>
       <div class="nav navbar-nav ms-auto">
-        <div class="navbar-user">
-          <img id="profile-pic" class="rounded-circle" width="30px" height="30px" />
-          <span class="text-light" id="profile-name"></span>
-          <a href="/auth/logout" class="text-muted"><i>(logout)</i></a>
+        <div class="dropdown">
+          <a class="d-flex align-items-center link-body-emphasis text-decoration-none dropdown-toggle" href="#"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="text-light me-2" id="profile-name"></span>
+            <img id="profile-pic" class="rounded-circle" width="30px" height="30px" />
+          </a>
+          <ul class="dropdown-menu text-small">
+            <li>
+              <a href="/auth/logout" class="dropdown-item">logout</a>
+            </li>
+          </ul>
         </div>
       </div>
-      <!-- <div id="theme-indicator" class="mx-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px"></div> -->
     </div>
   </nav>
 
