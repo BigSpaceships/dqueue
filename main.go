@@ -72,14 +72,15 @@ func main() {
 
 	apiMux := http.NewServeMux()
 
-	apiMux.HandleFunc("POST /{queue}/point", discussion.NewPoint)
-	apiMux.HandleFunc("POST /{queue}/clarifier", discussion.NewClarifier)
-	apiMux.HandleFunc("DELETE /{queue}/point/{id}", discussion.DeletePoint)
-	apiMux.HandleFunc("DELETE /{queue}/clarifier/{id}", discussion.DeleteClarifier)
-	apiMux.HandleFunc("POST /{queue}/change-topic", discussion.ChangeTopic)
-	apiMux.HandleFunc("GET /{queue}/queue", discussion.GetQueue)
+	apiMux.HandleFunc("POST /queue/{queue}/point", discussion.NewPoint)
+	apiMux.HandleFunc("POST /queue/{queue}/clarifier", discussion.NewClarifier)
+	apiMux.HandleFunc("DELETE /queue/{queue}/point/{id}", discussion.DeletePoint)
+	apiMux.HandleFunc("DELETE /queue/{queue}/clarifier/{id}", discussion.DeleteClarifier)
+	apiMux.HandleFunc("PATCH /queue/{queue}", discussion.ChangeTopic)
+	apiMux.HandleFunc("GET /queue/{queue}", discussion.GetQueue)
+	apiMux.HandleFunc("POST /queue/{queue}/new-child", discussion.NewQueue)
 	apiMux.HandleFunc("GET /discussion", discussion.GetDiscussion)
-	apiMux.HandleFunc("/join_ws", ws_server.WebsocketConnect)
+	apiMux.HandleFunc("/joinws", ws_server.WebsocketConnect)
 
 	http.Handle("/api/", http.StripPrefix("/api", auth.Handler(apiMux)))
 

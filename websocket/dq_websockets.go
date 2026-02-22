@@ -67,6 +67,7 @@ func (server *WsServer) RemoveListener(ws WebsocketSubscriber) {
 }
 
 func (server *WsServer) WebsocketConnect(w http.ResponseWriter, r *http.Request) {
+	log.Println("Joining ws")
 	server.AddListener(w, r)
 }
 

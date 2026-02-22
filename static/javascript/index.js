@@ -26,23 +26,49 @@ async function getDiscussion() {
   }
 }
 
+async function getQueue(id) {
+  try {
+    const response = await fetchAPI(`${window.location.origin}/api/queue/${id}`)
+
+    if (!response.ok) {
+      throw new Error(response.status);
+    }
+
+    const json = await response.json()
+
+    return json
+  } catch (e) {
+    throw new Error(e)
+  }
+}
+
 function enterQueue(type) {
-  fetchAPI(`${window.location.origin}/api/${window.queue_id}/${type}`, {
+  fetchAPI(`${window.location.origin}/api/queue/${window.queueId}/${type}`, {
     method: "POST",
   })
 }
 
 function leaveQueue(type, id) {
-  fetchAPI(`${window.location.origin}/api/${window.queue_id}/${type}/${id}`, {
+  fetchAPI(`${window.location.origin}/api/queue/${window.queueId}/${type}/${id}`, {
     method: "DELETE",
   });
 }
 
 function changeTopic(event) {
-  fetchAPI(`${window.location.origin}/api/change-topic/${window.queue_id}`, {
-    method: "POST",
+  fetchAPI(`${window.location.origin}/api/queue/${window.queueId}`, {
+    method: "PATCH",
     body: JSON.stringify({
       "new-topic": event.target.value
+    }),
+  })
+}
+
+async function newQueue(topic) {
+  fetchAPI(`${window.location.origin}/api/queue/${window.queueId}/new-child`, {
+    method: "POST",
+    body: JSON.stringify({
+      "topic": topic,
+      "move-users": true
     }),
   })
 }
@@ -50,24 +76,34 @@ function changeTopic(event) {
 function joinWebsocket(retryCount = 0) {
   const isSecure = window.location.protocol == "https:";
   const protocol = isSecure ? "wss" : "ws";
-  const socket = new WebSocket(`${protocol}://${window.location.host}/api/join_ws`);
+  const socket = new WebSocket(`${protocol}://${window.location.host}/api/joinws`);
 
   socket.addEventListener("message", (event) => {
     const eventData = JSON.parse(event.data);
 
     switch (eventData.type) {
       case "point":
-        addEntryToQueue("point", eventData.data);
+        if (eventData.queueId == window.queueId) {
+          addEntryToQueue("point", eventData.data);
+        }
         break;
       case "clarifier":
-        addEntryToQueue("clarifier", eventData.data);
+        if (eventData.queueId == window.queueId) {
+          addEntryToQueue("clarifier", eventData.data);
+        }
         break;
       case "delete":
-        removeEntryFromQueue(eventData.id, eventData.dismisser);
+        if (eventData.queueId == window.queueId) {
+          removeEntryFromQueue(eventData.id, eventData.dismisser);
+        }
         break;
       case "topic":
-        console.log(event);
-        setTopic(eventData.topic);
+        if (eventData.queueId == window.queueId) {
+          setTopic(eventData.topic);
+        }
+        break;
+      case "new-queue":
+        loadQueueDom(eventData.queue);
         break;
     }
   });
@@ -75,8 +111,9 @@ function joinWebsocket(retryCount = 0) {
   socket.addEventListener("open", async () => {
     if (retryCount != 0) {
       console.log("reestablished websocket connection");
-      await rebuildQueue();
     }
+
+    await rebuildQueue();
   });
 
   socket.addEventListener("close", (event) => {
@@ -160,6 +197,35 @@ function getListNodeForQueueEntry(queueEntry) {
   return listElement;
 }
 
+function getListNodeForQueueChild(queue) {
+  console.log(queue);
+  const topic = queue["topic"];
+  const id = queue["id"];
+
+  const listElement = document.createElement("a");
+  listElement.classList.add("queue-child", "d-flex", "flex-row", "px-4", "py-3", "py-lg-2", "border-bottom", "align-items-center", "text-decoration-none");
+
+  listElement.onclick = async () => {
+    const newQueue = await getQueue(id);
+    loadQueueDom(newQueue);
+  };
+
+  const badgeElement = document.createElement("span");
+  badgeElement.classList.add("badge", "text-bg-secondary", "align-self-center", "me-2")
+  badgeElement.appendChild(document.createTextNode("Point"));
+  listElement.appendChild(badgeElement);
+  listElement.appendChild(document.createTextNode(topic));
+
+  return listElement;
+}
+
+function addChildToQueue(queue) {
+  const listElement = document.querySelector("#list-parent");
+
+  const divider = document.querySelector("div.children-spacer");
+  listElement.insertBefore(getListNodeForQueueChild(queue), divider);
+}
+
 function addEntryToQueue(type, queueEntry) {
   const listElement = document.querySelector("#list-parent");
 
@@ -184,7 +250,7 @@ function removeEntryFromQueue(id, dismisser) {
 
   console.log(`${dismisser} dismissed point ${id}`);
 
-  if (listElement.children.length == 2) {
+  if (listElement.children.length == 3) {
     const emptyQueueMsg = document.querySelector("p#empty-queue")
     emptyQueueMsg.removeAttribute("hidden")
   }
@@ -195,28 +261,43 @@ function setTopic(topic) {
   document.querySelector("input.discussion-title").value = topic;
 }
 
-async function rebuildQueue() {
-  let discussion = await getDiscussion();
-  let queue = discussion.queue;
-  window.queue_id = queue.id;
+function loadQueueDom(queue) {
+  window.queueId = queue.id;
 
   const listElement = document.querySelector("#list-parent");
 
-  Array.from(listElement.children).filter((el) => { 
-    return !el.classList.contains("clarifier-spacer") && el.id != "empty-queue" 
+  Array.from(listElement.children).filter((el) => {
+    return !el.classList.contains("clarifier-spacer") && !el.classList.contains("children-spacer") && el.id != "empty-queue"
   }).forEach((el) => {
     el.remove();
-  })
+  });
+
+  queue.children.forEach((child) => {
+    addChildToQueue(child);
+  });
 
   queue.clarifiers.forEach((queueEntry) => {
     addEntryToQueue('clarifier', queueEntry);
-  })
+  });
 
   queue.points.forEach((queueEntry) => {
     addEntryToQueue('point', queueEntry);
-  })
+  });
 
   setTopic(queue.topic);
+}
+
+async function rebuildQueue() {
+  if (window.queueId) {
+    let queue = await getQueue(window.queueId);
+
+    loadQueueDom(queue)
+  } else {
+    let discussion = await getDiscussion();
+    let queue = discussion.queue;
+
+    loadQueueDom(queue)
+  }
 }
 
 async function main() {
