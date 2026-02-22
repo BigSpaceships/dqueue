@@ -80,7 +80,7 @@ function changeTopic(event) {
 }
 
 async function newQueue(topic) {
-  if (!window.userInfo.isEboard) {
+  if (!window.userInfo.is_eboard) {
     console.error("Only E-Board members can create new queues");
     return;
   }
@@ -239,7 +239,7 @@ function getListNodeForQueueChild(queue) {
 
   const badgeElement = document.createElement("span");
   badgeElement.classList.add("badge", "text-bg-secondary", "align-self-center", "me-2")
-  badgeElement.appendChild(document.createTextNode("Point"));
+  badgeElement.appendChild(document.createTextNode("Topic"));
   listElement.appendChild(badgeElement);
   listElement.appendChild(document.createTextNode(topic));
 
