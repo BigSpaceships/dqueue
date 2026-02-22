@@ -165,21 +165,16 @@ func (discussion *Discussion) DeleteClarifier(w http.ResponseWriter, r *http.Req
 func (discussion *Discussion) NewClarifier(w http.ResponseWriter, r *http.Request) {
 	log.Println("hi")
 	userInfo := auth.GetUserClaims(r)
-	log.Println("hi")
 
 	queue_id, err := strconv.Atoi(r.PathValue("queue"))
 
-	log.Println("hi")
 	if err != nil {
 		http.Error(w, "error parsing queue_id to int"+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("%d\n", queue_id)
-
 	queue, ok := discussion.queueMap[queue_id]
 
-	log.Println("hi")
 	if !ok {
 		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queue_id), http.StatusBadRequest)
 	}
