@@ -3,6 +3,26 @@ Whatever you want to call this is a discussion queue used for big discussions li
 
 Access it at [dq.csh.rit.edu](https://dq.csh.rit.edu) or dev at [dairyqueen.cs.house](https://dairyqueen.cs.house)
 
+### How to use it
+1. Go to one of the links above
+2. Log in to your provider of choice, CSH preferred
+3. Click the buttons to enter yourself into the queue
+   - Woah it's a Discussion Queue
+4. If there are other open topics, clicking them in the list should take you to those topics until you reach where you would like to talk
+5. You can click the green check to clear your point, or others points if you're E-Board
+6. E-Board memebers can also change the topic, as well as create a new one which will be nested under the current discussion
+
+### Running locally
+Copy `.env.example` to `.env` and fill out with sane values, talk to and RTP or me for help with this, you may have to create a google client for this, [this guide](https://developers.google.com/identity/sign-in/web/sign-in) can help
+
+`NON_EBOARD_ADMINS` is a comma separated list of CSH usernames that should be considered E-Board (mostly for testing)
+
+Dairy queen can be run locally with podman/docker using the compose file using watch, which will reload frontend changes without you having to restart the server
+- (I couldn't figure out how to make go work nicely with it and it's not that painful ngl)
+```sh
+podman compose watch
+```
+
 ### How it works
 
 #### Tech stack
