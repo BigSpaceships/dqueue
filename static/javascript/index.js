@@ -80,6 +80,11 @@ function changeTopic(event) {
 }
 
 async function newQueue(topic) {
+  if (!window.userInfo.isEboard) {
+    console.error("Only E-Board members can create new queues");
+    return;
+  }
+
   fetchAPI(`${window.location.origin}/api/queue/${window.queueId}/new-child`, {
     method: "POST",
     body: JSON.stringify({
@@ -87,6 +92,12 @@ async function newQueue(topic) {
       "move-users": true
     }),
   })
+}
+
+function newQueueFormSubmit() {
+  const topicElement = document.getElementById('newQueueTopic')
+  newQueue(topicElement.value)
+  topicElement.value = "";
 }
 
 function joinWebsocket(retryCount = 0) {
@@ -175,6 +186,7 @@ function updateUserInfo(userInfo) {
 
   if (!isEboard) {
     document.querySelector("input.discussion-title").setAttribute("disabled", "true");
+    document.getElementById("createQueueModalBtn").classList.add("d-none");
   }
 }
 
@@ -283,13 +295,22 @@ function setPath(path) {
     breadcrumbParent.children[i].remove();
   }
 
-  path.forEach((pathEl) => {
+  for (let i = 0; i < path.length; i++) {
+    const pathEl = path[i];
+
     const liElement = document.createElement("li");
     liElement.classList.add("breadcrumb-item");
 
     const aElement = document.createElement("a");
-    aElement.classList.add("link-body-emphasis", "text-decoration-none", "text-muted");
-    aElement.href="#";
+    aElement.classList.add("link-body-emphasis", "text-decoration-none");
+
+    if (i == path.length - 1) {
+      aElement.classList.add("text-primary");
+    } else {
+      aElement.classList.add("text-muted");
+    }
+
+    aElement.href = "#";
 
     aElement.onclick = async () => {
       const newQueue = await getQueue(pathEl.id);
@@ -304,7 +325,7 @@ function setPath(path) {
     aElement.appendChild(spanElement);
 
     breadcrumbParent.appendChild(liElement);
-  });
+  };
 }
 
 async function loadQueueDom(queue) {
