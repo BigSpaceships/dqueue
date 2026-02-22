@@ -42,6 +42,22 @@ async function getQueue(id) {
   }
 }
 
+async function getPath(id) {
+  try {
+    const response = await fetchAPI(`${window.location.origin}/api/queue/${id}/path`)
+
+    if (!response.ok) {
+      throw new Error(response.status);
+    }
+
+    const json = await response.json()
+
+    return json
+  } catch (e) {
+    throw new Error(e)
+  }
+}
+
 function enterQueue(type) {
   fetchAPI(`${window.location.origin}/api/queue/${window.queueId}/${type}`, {
     method: "POST",
@@ -198,7 +214,6 @@ function getListNodeForQueueEntry(queueEntry) {
 }
 
 function getListNodeForQueueChild(queue) {
-  console.log(queue);
   const topic = queue["topic"];
   const id = queue["id"];
 
@@ -261,7 +276,38 @@ function setTopic(topic) {
   document.querySelector("input.discussion-title").value = topic;
 }
 
-function loadQueueDom(queue) {
+function setPath(path) {
+  const breadcrumbParent = document.querySelector("ol.breadcrumb");
+
+  for (let i = breadcrumbParent.childElementCount - 1; i >= 0; i--) {
+    breadcrumbParent.children[i].remove();
+  }
+
+  path.forEach((pathEl) => {
+    const liElement = document.createElement("li");
+    liElement.classList.add("breadcrumb-item");
+
+    const aElement = document.createElement("a");
+    aElement.classList.add("link-body-emphasis", "text-decoration-none", "text-muted");
+    aElement.href="#";
+
+    aElement.onclick = async () => {
+      const newQueue = await getQueue(pathEl.id);
+      loadQueueDom(newQueue);
+    }
+
+    liElement.appendChild(aElement);
+
+    const spanElement = document.createElement("span");
+    spanElement.appendChild(document.createTextNode(pathEl.topic));
+
+    aElement.appendChild(spanElement);
+
+    breadcrumbParent.appendChild(liElement);
+  });
+}
+
+async function loadQueueDom(queue) {
   window.queueId = queue.id;
 
   const listElement = document.querySelector("#list-parent");
@@ -285,18 +331,21 @@ function loadQueueDom(queue) {
   });
 
   setTopic(queue.topic);
+
+  const path = await getPath(queue.id);
+  setPath(path);
 }
 
 async function rebuildQueue() {
   if (window.queueId) {
     let queue = await getQueue(window.queueId);
 
-    loadQueueDom(queue)
+    await loadQueueDom(queue)
   } else {
     let discussion = await getDiscussion();
     let queue = discussion.queue;
 
-    loadQueueDom(queue)
+    await loadQueueDom(queue)
   }
 }
 

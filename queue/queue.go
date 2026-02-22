@@ -27,9 +27,10 @@ type Queue struct {
 	Id         int          `json:"id"`
 	Points     []QueueEntry `json:"points"`
 	Clarifiers []QueueEntry `json:"clarifiers"`
-	Children   []*Queue      `json:"children"`
+	Children   []*Queue     `json:"children"`
 	Topic      string       `json:"topic"`
 	pointCount int
+	parent     *Queue
 }
 
 type Discussion struct {
@@ -102,6 +103,7 @@ func (discussion *Discussion) NewQueue(w http.ResponseWriter, r *http.Request) {
 		Children:   make([]*Queue, 0),
 		Topic:      requestData.Topic,
 		pointCount: 0,
+		parent:     parentQueue,
 	}
 
 	discussion.queueCount++
@@ -120,6 +122,51 @@ func (discussion *Discussion) NewQueue(w http.ResponseWriter, r *http.Request) {
 		Queue:     newQueue,
 		MoveUsers: requestData.MoveUsers,
 	})
+}
+
+func (discussion *Discussion) GetQueuePath(w http.ResponseWriter, r *http.Request) {
+	queueId, err := strconv.Atoi(r.PathValue("queue"))
+
+	if err != nil {
+		http.Error(w, "error parsing queue id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue, ok := discussion.queueMap[queueId]
+
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queueId), http.StatusBadRequest)
+		return
+	}
+
+	path := make([]struct {
+		Topic string `json:"topic"`
+		Id    int    `json:"id"`
+	}, 0)
+
+	for queue != nil {
+		newPathObj := struct {
+			Topic string `json:"topic"`
+			Id    int    `json:"id"`
+		}{
+			Topic: queue.Topic,
+			Id:    queue.Id,
+		}
+
+		log.Println(newPathObj)
+		path = append(path, newPathObj)
+		log.Println(path)
+
+		queue = queue.parent
+	}
+
+	log.Println(path)
+	slices.Reverse(path)
+	log.Println(path)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(path)
 }
 
 func (discussion *Discussion) DeletePoint(w http.ResponseWriter, r *http.Request) {
