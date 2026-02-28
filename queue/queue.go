@@ -111,16 +111,13 @@ func (discussion *Discussion) NewQueue(w http.ResponseWriter, r *http.Request) {
 	discussion.queueMap[newQueue.Id] = &newQueue
 
 	parentQueue.Children = append(parentQueue.Children, &newQueue)
-	log.Println(parentQueue)
 
 	discussion.wsServer.SendWSMessage(struct {
-		Type      string `json:"type"`
-		Queue     Queue  `json:"queue"`
-		MoveUsers bool   `json:"move-users"`
+		Type  string `json:"type"`
+		Queue Queue  `json:"queue"`
 	}{
-		Type:      "new-queue",
-		Queue:     newQueue,
-		MoveUsers: requestData.MoveUsers,
+		Type:  "move-to-queue",
+		Queue: newQueue,
 	})
 }
 
@@ -153,9 +150,7 @@ func (discussion *Discussion) GetQueuePath(w http.ResponseWriter, r *http.Reques
 			Id:    queue.Id,
 		}
 
-		log.Println(newPathObj)
 		path = append(path, newPathObj)
-		log.Println(path)
 
 		queue = queue.parent
 	}
@@ -429,4 +424,34 @@ func (discussion *Discussion) GetQueue(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(queue)
+}
+
+func (discussion *Discussion) DeleteQueue(w http.ResponseWriter, r *http.Request) {
+	queueId, err := strconv.Atoi(r.PathValue("queue"))
+
+	if err != nil {
+		http.Error(w, "error parsing queue id to int"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	queue, ok := discussion.queueMap[queueId]
+
+	if !ok {
+		http.Error(w, fmt.Sprintf("queue %d was not a part of the discussion", queueId), http.StatusBadRequest)
+	}
+
+	index := slices.Index(queue.parent.Children, queue)
+	queue.parent.Children = slices.Delete(queue.parent.Children, index, index+1)
+
+	delete(discussion.queueMap, queueId)
+
+	fmt.Println(queue.parent)
+
+	discussion.wsServer.SendWSMessage(struct {
+		Type  string `json:"type"`
+		Queue Queue  `json:"queue"`
+	}{
+		Type:  "move-to-queue",
+		Queue: *queue.parent,
+	})
 }

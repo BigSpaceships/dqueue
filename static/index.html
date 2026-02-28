@@ -110,9 +110,14 @@
           <h2 class="m-0 fs-3 p-1">
             <input class="discussion-title" value="AGH" onchange="changeTopic(event)" />
           </h2>
-          <a href="#" class="ms-auto" onclick="rebuildQueue(); return false">
-            <i class="bi bi-repeat text-muted"></i>
-          </a>
+          <div class="ms-auto d-flex flex-row align-items-center">
+            <a href="#" id="remove-queue" onclick="closeActiveQueue()">
+              <i class="bi bi-x text-danger fs-3"></i>
+            </a>
+            <a href="#" class="ms-2" onclick="rebuildQueue(); return false">
+              <i class="bi bi-repeat text-muted fs-5"></i>
+            </a>
+          </div>
         </div>
       </div>
       <div id="list-parent" class="flex-grow-1 mh-0 fs-4 overflow-auto">
@@ -148,12 +153,14 @@
         <div class="modal-body">
           <div class="mb-3">
             <label for="newQueueTopic" class="form-label">New Topic</label>
-            <input type="text" class="form-control" id="newQueueTopic" placeholder="Big Long Discussion" aria-placeholder="Big Long Discussion">
+            <input type="text" class="form-control" id="newQueueTopic" placeholder="Big Long Discussion"
+              aria-placeholder="Big Long Discussion">
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="newQueueFormSubmit()">Create</button>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+            onclick="newQueueFormSubmit()">Create</button>
         </div>
       </div>
     </div>
