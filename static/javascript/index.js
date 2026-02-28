@@ -79,6 +79,17 @@ function changeTopic(event) {
   })
 }
 
+function closeActiveQueue() {
+  console.log(window.queueId);
+  closeQueue(window.queueId);
+}
+
+function closeQueue(id) {
+  fetchAPI(`${window.location.origin}/api/queue/${id}`, {
+    method: "DELETE",
+  })
+}
+
 async function newQueue(topic) {
   if (!window.userInfo.is_eboard) {
     console.error("Only E-Board members can create new queues");
@@ -129,7 +140,7 @@ function joinWebsocket(retryCount = 0) {
           setTopic(eventData.topic);
         }
         break;
-      case "new-queue":
+      case "move-to-queue":
         loadQueueDom(eventData.queue);
         break;
     }
@@ -187,6 +198,7 @@ function updateUserInfo(userInfo) {
   if (!isEboard) {
     document.querySelector("input.discussion-title").setAttribute("disabled", "true");
     document.getElementById("createQueueModalBtn").classList.add("d-none");
+    document.getElementById("remove-queue").classList.add("hidden");
   }
 }
 
@@ -242,6 +254,15 @@ function getListNodeForQueueChild(queue) {
   badgeElement.appendChild(document.createTextNode("Topic"));
   listElement.appendChild(badgeElement);
   listElement.appendChild(document.createTextNode(topic));
+
+  if (window.userInfo.is_eboard) {
+    const completeLink = document.createElement("a");
+    completeLink.href = "#";
+    completeLink.classList.add("ms-auto");
+    completeLink.onclick = () => { closeQueue(id); return true; };
+    completeLink.innerHTML = '<i class="bi bi-x text-danger fs-4"></i>'
+    listElement.appendChild(completeLink);
+  }
 
   return listElement;
 }
@@ -355,6 +376,14 @@ async function loadQueueDom(queue) {
 
   const path = await getPath(queue.id);
   setPath(path);
+
+  console.log(path.length);
+
+  if (path.length > 1 && window.userInfo.is_eboard) {
+    document.getElementById("remove-queue").hidden = false;
+  } else {
+    document.getElementById("remove-queue").hidden = true;
+  }
 }
 
 async function rebuildQueue() {
