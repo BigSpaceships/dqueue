@@ -111,6 +111,17 @@ function newQueueFormSubmit() {
   topicElement.value = "";
 }
 
+function resetDiscussionFormSubmit() {
+  if (!window.userInfo.is_eboard) {
+    console.error("Only E-Board members can create reset queues");
+    return;
+  }
+
+  fetchAPI(`${window.location.origin}/api/discussion/reset`, {
+    method: "PUT"
+  })
+}
+
 function joinWebsocket(retryCount = 0) {
   const isSecure = window.location.protocol == "https:";
   const protocol = isSecure ? "wss" : "ws";
