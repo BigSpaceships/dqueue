@@ -141,7 +141,7 @@ func (auth *Config) LoginCallback(w http.ResponseWriter, r *http.Request) {
 		userInfo.Picture = fmt.Sprintf("https://profiles.csh.rit.edu/image/%s", userInfo.Username)
 	}
 
-	userInfo.IsEboard = slices.Contains(userInfo.Groups, "eboard") || slices.Contains(nonEboardAdmins, userInfo.Username)
+	userInfo.IsEboard = slices.Contains(userInfo.Groups, "eboard") || slices.Contains(userInfo.Groups, "active_rtp") || slices.Contains(nonEboardAdmins, userInfo.Username)
 
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
 	expireCookie := 3600
