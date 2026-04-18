@@ -82,6 +82,7 @@ func main() {
 	apiMux.HandleFunc("DELETE /queue/{queue}", discussion.DeleteQueue)
 	apiMux.HandleFunc("GET /queue/{queue}/path", discussion.GetQueuePath)
 	apiMux.HandleFunc("GET /discussion", discussion.GetDiscussion)
+	apiMux.HandleFunc("PUT /discussion/reset", discussion.ResetDiscussion)
 	apiMux.HandleFunc("/joinws", ws_server.WebsocketConnect)
 
 	http.Handle("/api/", http.StripPrefix("/api", auth.Handler(apiMux)))

@@ -63,6 +63,37 @@ func SetupDiscussion(wsServer *dq_websocket.WsServer) *Discussion {
 	return &discussion
 }
 
+func (discussion *Discussion) ResetDiscussion(w http.ResponseWriter, r *http.Request) {
+	userInfo := auth.GetUserClaims(r)
+
+	if !userInfo.IsEboard {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	discussion.queueCount = 0
+	discussion.queueMap = make(map[int]*Queue)
+
+	baseQueue := Queue{
+		Id:         discussion.queueCount,
+		Points:     make([]QueueEntry, 0),
+		Clarifiers: make([]QueueEntry, 0),
+		Children:   make([]*Queue, 0),
+		Topic:      "Big long discussion",
+		pointCount: 0,
+	}
+
+	discussion.queueCount++
+	discussion.Queue = &baseQueue
+	discussion.queueMap[baseQueue.Id] = &baseQueue
+
+	discussion.wsServer.SendWSMessage(struct {
+		Type string `json:"type"`
+	}{
+		Type: "refresh",
+	})
+}
+
 func (discussion *Discussion) NewQueue(w http.ResponseWriter, r *http.Request) {
 	userInfo := auth.GetUserClaims(r)
 

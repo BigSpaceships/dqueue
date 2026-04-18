@@ -111,12 +111,23 @@ function newQueueFormSubmit() {
   topicElement.value = "";
 }
 
+function resetDiscussionFormSubmit() {
+  if (!window.userInfo.is_eboard) {
+    console.error("Only E-Board members can create reset queues");
+    return;
+  }
+
+  fetchAPI(`${window.location.origin}/api/discussion/reset`, {
+    method: "PUT"
+  })
+}
+
 function joinWebsocket(retryCount = 0) {
   const isSecure = window.location.protocol == "https:";
   const protocol = isSecure ? "wss" : "ws";
   const socket = new WebSocket(`${protocol}://${window.location.host}/api/joinws`);
 
-  socket.addEventListener("message", (event) => {
+  socket.addEventListener("message", async (event) => {
     const eventData = JSON.parse(event.data);
 
     switch (eventData.type) {
@@ -142,6 +153,9 @@ function joinWebsocket(retryCount = 0) {
         break;
       case "move-to-queue":
         loadQueueDom(eventData.queue);
+        break;
+      case "refresh":
+        await rebuildQueue();
         break;
     }
   });
