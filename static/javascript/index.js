@@ -211,7 +211,7 @@ function updateUserInfo(userInfo) {
 
   if (!isEboard) {
     document.querySelector("input.discussion-title").setAttribute("disabled", "true");
-    document.querySelector("input.reset-discussion").setAttribute("disabled", "true");
+    document.querySelector("button#reset-discussion").classList.add("hidden", "d-none");
     document.getElementById("createQueueModalBtn").classList.add("d-none");
     document.getElementById("remove-queue").classList.add("hidden");
   }
