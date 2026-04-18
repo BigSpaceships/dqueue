@@ -116,7 +116,7 @@ function joinWebsocket(retryCount = 0) {
   const protocol = isSecure ? "wss" : "ws";
   const socket = new WebSocket(`${protocol}://${window.location.host}/api/joinws`);
 
-  socket.addEventListener("message", (event) => {
+  socket.addEventListener("message", async (event) => {
     const eventData = JSON.parse(event.data);
 
     switch (eventData.type) {
@@ -142,6 +142,9 @@ function joinWebsocket(retryCount = 0) {
         break;
       case "move-to-queue":
         loadQueueDom(eventData.queue);
+        break;
+      case "refresh":
+        await rebuildQueue();
         break;
     }
   });
